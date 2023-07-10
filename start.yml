@@ -1,0 +1,4 @@
+---
+- hosts: localhost
+- include: /home/dmonish3/apps/scripts/jboss_ubuntu.yml
+  when: ansible_facts['distribution'] == "Ubuntu"

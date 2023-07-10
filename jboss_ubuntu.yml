@@ -1,0 +1,83 @@
+---
+- hosts: localhost
+  become: true
+  tasks:
+  - name: Update all
+    apt:
+     name: "*"
+     
+  - name: Installing JDK
+    apt:
+      name: default-jdk
+      state: latest
+      
+  - name: Adding Group name wildfly
+    group:
+      name: wildfly
+      state: present
+      
+  - name: Adding User 
+    user:
+       name: wildfly
+       home: /opt/wildfly
+       shell: /sbin/nologin
+       group: wildfly
+       
+  - name: Downloading wildfly tar file i.e JBOSS 
+    get_url:
+       url: https://download.jboss.org/wildfly/16.0.0.Final/wildfly-16.0.0.Final.tar.gz
+       dest: /tmp
+       
+  - name: Archieving the downloaded package
+    unarchive:
+      src: /tmp/wildfly-16.0.0.Final.tar.gz 
+      dest: /tmp
+      remote_src: yes
+      
+  - name: Moving the pre-requistes file to configuration location
+    copy:
+      src: /tmp/wildfly-16.0.0.Final/
+      dest: /opt/wildfly
+      remote_src: yes
+      
+  - name: Adding ownership
+    file:
+      path: /opt/wildfly
+      owner: wildfly
+      group: wildfly
+      mode: '0777'
+  
+  - name: Creating WildFly service folder in the /etc/ directory
+    file:
+      path: /etc/wildfly
+      state: directory
+      mode: '0777'
+      
+  - name: Copying pre-requistes - part one
+    copy:
+      src: /opt/wildfly/docs/contrib/scripts/systemd/wildfly.conf
+      dest: /etc/wildfly/
+      remote_src: yes
+      
+  - name: Copying pre-requistes - part two
+    copy:
+      src: /opt/wildfly/docs/contrib/scripts/systemd/launch.sh
+      dest: /opt/wildfly/bin/
+      remote_src: yes
+  
+  - name: Changing perm 
+    command: sudo sh -c 'chmod +x /opt/wildfly/bin/*.sh'
+  
+  - name: Copying systemd file to the /etc/systemd/system/ directory
+    copy:
+      src: /opt/wildfly/docs/contrib/scripts/systemd/wildfly.service 
+      dest: /etc/systemd/system/
+      
+  - name: stopping the JBOSS service
+    service: name=wildfly state=stopped
+  
+  - name: starting the JBOSS service
+    service: name=wildfly state=started
+    
+  - name: enable JBOSS service
+    service: name=wildfly enabled=yes
